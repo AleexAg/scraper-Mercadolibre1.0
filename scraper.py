@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import requests
 import concurrent.futures
 import pandas as pd
+import datetime
 
 NUM_THREADS = 10
 
@@ -163,14 +164,29 @@ def getInformationOlList(soup: BeautifulSoup):
         rawItemList = section.find_all('li', {'class': 'ui-search-layout__item'})
 
         for item in rawItemList:
-            products_data.append({
-                'titles': item.find('h2', {'class': 'ui-search-item__title'}).text,
-                'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
-                'urls': item.find('a', {'class': 'ui-search-link'})['href'],
-                'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
-            })
-            #a = item.find('a', {'class': 'ui-search-item__group__element'})['href']
-            #get_description(a)
+            url = item.find("a", class_="ui-search-link")["href"]
+
+
+            responseDescription = description_connect(url)
+            soup2 = BeautifulSoup(responseDescription.content, "html.parser") 
+
+            rawItemList2 = soup2.find_all('div', {'class': 'ui-pdp-description'}) 
+            
+            for items in rawItemList2:
+                try:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
+                        executor.submit(
+                            products_data.append({
+                                'titles': item.find('h2', {'class': 'ui-search-item__title'}).text,
+                                'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
+                                'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
+                                'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href']),
+                                'description': items.find('p', {'class': 'ui-pdp-description__content'}).text
+                                })
+                        )
+                
+                except Exception as r:
+                    print(r)
 
     except Exception as e:
         print("Error get element Ol", e)
@@ -180,16 +196,27 @@ def getInformation(soup: BeautifulSoup) -> None:
         rawItemList = soup.find_all('li', {'class': 'ui-search-layout__item'})
 
         for item in rawItemList:
-            products_data.append({
-                'titles': item.find('h2', {'class': 'ui-search-item__title'}).text,
-                'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
-                'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
-                'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
-            })
+            url = item.find("a", class_="ui-search-link")["href"]
+            responseDescription = description_connect(url)
+            soup2 = BeautifulSoup(responseDescription.content, "html.parser") 
 
-            #a = item.find("a", class_="ui-search-link")["href"]
-            #get_description(a)
+            rawItemList2 = soup2.find_all('div', {'class': 'ui-pdp-description'}) 
             
+            for items in rawItemList2:
+                try:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
+                        executor.submit(
+                            products_data.append({
+                                'titles': item.find('h2', {'class': 'ui-search-item__title'}).text,
+                                'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
+                                'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
+                                'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href']),
+                                'description': items.find('p', {'class': 'ui-pdp-description__content'}).text
+                                })
+                        )
+                
+                except Exception as r:
+                    print(r)
     except:
         getInformationOlList(soup)
         print("Error to get information")
@@ -244,7 +271,41 @@ def searchItems(link):
     except:
         print("Error to get items")
 
+def description_connect(url):
+    responseDescription = fetch_proxies(url)
+    if not responseDescription:
+        responseDescription = fetch_proxies_one(url)
+        if not responseDescription:
+            responseDescription = fetch_proxies_two(url)
+            if not responseDescription:
+                responseDescription = fetch_proxies_three(url)
+    
+    return responseDescription
+
+
+"""
+def getDescription(url):
+    try:
+        responseDescription = fetch_proxies(url)
+        if not responseDescription:
+            responseDescription = fetch_proxies_one(url)
+            if not responseDescription:
+                responseDescription = fetch_proxies_two(url)
+                if not responseDescription:
+                    responseDescription = fetch_proxies_three(url)
+        soup = BeautifulSoup(responseDescription.content, 'html.parser')
+        rawItemList = soup.find('p', {'class': 'ui-pdp-description__content'}).text
+        desc = ''
+        for i in range(12):
+            desc += rawItemList[i] 
+        return desc
+    except:
+        pass
+"""
+
 def main():
+    y = datetime.datetime.now()
+    print(y)
     print("Start scraping... please wait...")
     response = fetch_proxies('https://listado.mercadolibre.com.co/_CustId_'+custId)
     soup = BeautifulSoup(response.content, 'html.parser')
@@ -267,6 +328,7 @@ def main():
 
     frame = pd.DataFrame(products_data)
     frame.to_excel(f'{name_seler}.xlsx', index=False)
-
+    x = datetime.datetime.now()
+    print(x)
 if __name__ == '__main__':
     main()
