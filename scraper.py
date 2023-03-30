@@ -29,6 +29,7 @@ def getMoreCategory(link):
     except:
         print("No more subcategories")
 
+
 def getTotalSold(name):
     try:
         response = fetch_proxies(f'https://www.mercadolibre.com.co/perfil/{name}')
@@ -45,6 +46,7 @@ def getTotalSold(name):
 
     except:
         print("Error on looking info")
+
 
 def getLinkByCategory(pageSoup:BeautifulSoup):
 
@@ -174,7 +176,6 @@ def getInformationOlList(soup: BeautifulSoup):
         rawItemList = section.find_all('li', {'class': 'ui-search-layout__item'})
 
         for item in rawItemList:
-            description = get_description(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
             try:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
                     executor.submit(
@@ -183,7 +184,6 @@ def getInformationOlList(soup: BeautifulSoup):
                             'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
                             'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
                             'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
-                            #'status': get_url_list(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
                             })
                         )
             except Exception as r:
@@ -197,7 +197,6 @@ def getInformation(soup: BeautifulSoup) -> None:
         rawItemList = soup.find_all('li', {'class': 'ui-search-layout__item'})
 
         for item in rawItemList:
-            description = get_description(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
             try:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
                     executor.submit(
@@ -206,7 +205,6 @@ def getInformation(soup: BeautifulSoup) -> None:
                             'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
                             'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
                             'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
-                            #'status': get_url_list(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
                             })
                         )
                 
@@ -267,16 +265,22 @@ def searchItems(link):
     except:
         print("Error to get items")
 
-def description_connect(url):
-    responseDescription = fetch_proxies(url)
-    if not responseDescription:
-        responseDescription = fetch_proxies_one(url)
-        if not responseDescription:
-            responseDescription = fetch_proxies_two(url)
-            if not responseDescription:
-                responseDescription = fetch_proxies_three(url)
-    
-    return responseDescription
+
+def get_sold(product):
+    try:
+        res = fetch_proxies(product['urls'])
+        if not res:
+            res = fetch_proxies_one(product['urls'])
+            if not res:
+                res = fetch_proxies_two(product['urls'])
+                if not res:
+                    res = fetch_proxies_three(product['urls'])
+
+        ItemSoup = BeautifulSoup(res.content, 'html.parser')
+        countSold = ItemSoup.find('span', {'class': 'ui-pdp-subtitle'}).text
+        product['sold'] = countSold[10:]
+    except:
+        print("Error to get sold by product")
 
 def main():
     y = datetime.datetime.now()
@@ -291,7 +295,6 @@ def main():
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
             executor.map(searchItems, CategoriesWithOutSub)
-
     products_data.sort(reverse=True, key=lambda x:(len(x), repr(x)))
     
     for i in range(0, len(products_data)):
@@ -301,6 +304,15 @@ def main():
         except:
             continue
 
+    if len(products_data) % 5000 == 0:
+        time_queries = int(len(products_data) / 5000)
+    else:
+        time_queries = int((len(products_data) // 5000) + 1)
+    
+    for i in range(0, time_queries):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
+                executor.map(get_sold, products_data[0:4999])
+    
     frame = pd.DataFrame(products_data)
     frame.to_excel(f'{name_seler}.xlsx', index=False)
     x = datetime.datetime.now()
