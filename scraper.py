@@ -6,7 +6,7 @@ import pandas as pd
 
 NUM_THREADS = 10
 
-custId = '358429075'
+custId = '89193573'
 CategoriesWithSub = []
 CategoriesWithOutSub = []
 products_data = []
@@ -47,7 +47,6 @@ def getTotalSold(name):
 
 def getLinkByCategory(pageSoup:BeautifulSoup):
 
-
     titleCategory = pageSoup.find('div', {'class': 'ui-search-filter-dt-title shops-custom-primary-font'})
     title = titleCategory.get_text()
     if title == 'Categorías':
@@ -55,9 +54,8 @@ def getLinkByCategory(pageSoup:BeautifulSoup):
         listCategories = titleCategory.find_previous('div', {'class': 'ui-search-filter-dl shops__filter-items'})
         categories = listCategories.find_all('li', {'class': 'ui-search-filter-container shops__container-lists'})
         
-        if (len(categories) >= 9):
+        if (len(categories) > 9):
             linkMoreCategories = listCategories.find('a', {'class': 'ui-search-modal__link ui-search-modal--default ui-search-link'})['href']  
-
             try:
                 res = fetch_proxies(linkMoreCategories)
                 if res == None:
@@ -108,13 +106,14 @@ def getLinkByCategory(pageSoup:BeautifulSoup):
                                 res = fetch_proxies_three(linkCategory)
 
                     page = BeautifulSoup(res.content, 'html.parser')
-                    itemsResult = int(page.find('span',{'class':'ui-search-search-result__quantity-results shops-custom-secondary-font'}).text.replace(' resultados', '').repalce('.', ''))
+                    itemsResult = int(page.find('span',{'class':'ui-search-search-result__quantity-results shops-custom-secondary-font'}).text.replace(' resultados', '').replace('.', ''))
                     if itemsResult > 2000:
                         CategoriesWithSub.append(linkCategory)
                     else:
                         CategoriesWithOutSub.append(linkCategory)
-                except:
-                    print("Error to search link category")
+                except Exception as e:
+                    print("Error to search link category 2", e)
+
     if title == 'Precio':
         listCategories = titleCategory.find_previous('div', {'class': 'ui-search-filter-dl shops__filter-items'})
         categoriesByPrice = listCategories.find_all('li', {'class': 'ui-search-filter-container shops__container-lists'})
@@ -129,6 +128,7 @@ def getLinkByCategory(pageSoup:BeautifulSoup):
                         res = fetch_proxies_two(listPrice)
                         if not res:
                             res = fetch_proxies_three(listPrice)
+                            
                 page = BeautifulSoup(res.content, 'html.parser')
                 itemsResult = int(page.find('span',{'class':'ui-search-search-result__quantity-results shops-custom-secondary-font'}).text.replace(' resultados', '').replace('.', ''))
 
