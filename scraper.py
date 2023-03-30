@@ -158,35 +158,36 @@ def get_id(url:str) -> str:
         product_id = product_id[0]
     return product_id
 
+
+
+def get_description(url):
+    try:
+        alex = fetch_proxies(url)
+        print(alex.status_code)
+    except Exception as e:
+        print(e)
+
+
 def getInformationOlList(soup: BeautifulSoup):
     try:
         section = soup.find('section', {'class': 'ui-search-results ui-search-results--without-disclaimer shops__search-results'})
         rawItemList = section.find_all('li', {'class': 'ui-search-layout__item'})
 
         for item in rawItemList:
-            url = item.find("a", class_="ui-search-link")["href"]
-
-
-            responseDescription = description_connect(url)
-            soup2 = BeautifulSoup(responseDescription.content, "html.parser") 
-
-            rawItemList2 = soup2.find_all('div', {'class': 'ui-pdp-description'}) 
-            
-            for items in rawItemList2:
-                try:
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
-                        executor.submit(
-                            products_data.append({
-                                'titles': item.find('h2', {'class': 'ui-search-item__title'}).text,
-                                'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
-                                'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
-                                'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href']),
-                                'description': items.find('p', {'class': 'ui-pdp-description__content'}).text
-                                })
+            description = get_description(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
+                    executor.submit(
+                        products_data.append({
+                            'titles': item.find('h2', {'class': 'ui-search-item__title'}).text,
+                            'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
+                            'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
+                            'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
+                            #'status': get_url_list(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
+                            })
                         )
-                
-                except Exception as r:
-                    print(r)
+            except Exception as r:
+                print(r)
 
     except Exception as e:
         print("Error get element Ol", e)
@@ -196,32 +197,27 @@ def getInformation(soup: BeautifulSoup) -> None:
         rawItemList = soup.find_all('li', {'class': 'ui-search-layout__item'})
 
         for item in rawItemList:
-            url = item.find("a", class_="ui-search-link")["href"]
-            responseDescription = description_connect(url)
-            soup2 = BeautifulSoup(responseDescription.content, "html.parser") 
-
-            rawItemList2 = soup2.find_all('div', {'class': 'ui-pdp-description'}) 
-            
-            for items in rawItemList2:
-                try:
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
-                        executor.submit(
-                            products_data.append({
-                                'titles': item.find('h2', {'class': 'ui-search-item__title'}).text,
-                                'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
-                                'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
-                                'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href']),
-                                'description': items.find('p', {'class': 'ui-pdp-description__content'}).text
-                                })
+            description = get_description(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
+                    executor.submit(
+                        products_data.append({
+                            'titles': item.find('h2', {'class': 'ui-search-item__title'}).text,
+                            'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
+                            'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
+                            'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
+                            #'status': get_url_list(item.find('a', {'class': 'ui-search-item__group__element'})['href'])
+                            })
                         )
                 
-                except Exception as r:
-                    print(r)
+            except Exception as r:
+                print(r)
     except:
         getInformationOlList(soup)
         print("Error to get information")
 
 def pagination(nextPage, isNextPage, isFirstPage, soup): 
+
     if not nextPage:
         return
     if isFirstPage == '1':
@@ -281,27 +277,6 @@ def description_connect(url):
                 responseDescription = fetch_proxies_three(url)
     
     return responseDescription
-
-
-"""
-def getDescription(url):
-    try:
-        responseDescription = fetch_proxies(url)
-        if not responseDescription:
-            responseDescription = fetch_proxies_one(url)
-            if not responseDescription:
-                responseDescription = fetch_proxies_two(url)
-                if not responseDescription:
-                    responseDescription = fetch_proxies_three(url)
-        soup = BeautifulSoup(responseDescription.content, 'html.parser')
-        rawItemList = soup.find('p', {'class': 'ui-pdp-description__content'}).text
-        desc = ''
-        for i in range(12):
-            desc += rawItemList[i] 
-        return desc
-    except:
-        pass
-"""
 
 def main():
     y = datetime.datetime.now()
