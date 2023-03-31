@@ -29,7 +29,6 @@ def getMoreCategory(link):
     except:
         print("No more subcategories")
 
-
 def getTotalSold(name):
     try:
         response = fetch_proxies(f'https://www.mercadolibre.com.co/perfil/{name}')
@@ -46,7 +45,6 @@ def getTotalSold(name):
 
     except:
         print("Error on looking info")
-
 
 def getLinkByCategory(pageSoup:BeautifulSoup):
 
@@ -160,15 +158,6 @@ def get_id(url:str) -> str:
         product_id = product_id[0]
     return product_id
 
-
-def get_description(url):
-    try:
-        alex = fetch_proxies(url)
-        print(alex.status_code)
-    except Exception as e:
-        print(e)
-
-
 def getInformationOlList(soup: BeautifulSoup):
     try:
         section = soup.find('section', {'class': 'ui-search-results ui-search-results--without-disclaimer shops__search-results'})
@@ -183,7 +172,7 @@ def getInformationOlList(soup: BeautifulSoup):
                             'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
                             'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
                             'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href']),
-                            'mainImage': item.find('img', {'class': 'ui-search-result-image__element'})["data-src"]
+                            'main_image': item.find('img', {'class': 'ui-search-result-image__element'})["data-src"]
                             })
                         )
             except Exception as r:
@@ -205,7 +194,7 @@ def getInformation(soup: BeautifulSoup) -> None:
                             'prices': item.find('span', {'class': 'price-tag-fraction'}).text.replace(',', ''),
                             'urls': item.find('a', {'class': 'ui-search-item__group__element'})['href'],
                             'id_product': get_id(item.find('a', {'class': 'ui-search-item__group__element'})['href']),
-                            'mainImage': item.find('img', {'class': 'ui-search-result-image__element'})["data-src"]
+                            'main_image': item.find('img', {'class': 'ui-search-result-image__element'})["data-src"]
                             })
                         )
                 
@@ -266,7 +255,6 @@ def searchItems(link):
     except:
         print("Error to get items")
 
-
 def get_sold(product):
     try:
         res = fetch_proxies(product['urls'])
@@ -290,20 +278,21 @@ def get_sold(product):
             product['description'] = description
 
         imagesContent = ItemSoup.find_all('div', {'class': 'ui-pdp-thumbnail__picture'})
-        try:
-            for items in imagesContent:
-                imagesItem = items.find('img', {'class': 'ui-pdp-image'})['data-src']
-                a = items.find('img', {'class': 'ui-pdp-image'})['alt']
-                for i in a:
-                    if i == '1':
-                        product['first_image'] = imagesItem
-                    elif i == '2':
-                        product['second_image'] = imagesItem
-                
-        except Exception as e:
-            pass
+        
+        for item in imagesContent:
+            images = item.find('img', {'class': 'ui-pdp-image'})
+            for num in images['alt']:
+                first = images['data-src']
+                if num == '1':
+                    product['first_image'] = first
+                if num == '2':
+                    product['second_image'] = first
+            
+
+
     except Exception as e:
         pass
+
 
 def main():
     y = datetime.datetime.now()
