@@ -7,7 +7,7 @@ import datetime
 
 NUM_THREADS = 10
 
-custId = '89193573'
+custId = '176165485'
 CategoriesWithSub = []
 CategoriesWithOutSub = []
 products_data = []
@@ -255,7 +255,7 @@ def searchItems(link):
     except:
         print("Error to get items")
 
-def get_sold(product):
+def get_info(product):
     try:
         res = fetch_proxies(product['urls'])
         if not res:
@@ -266,30 +266,43 @@ def get_sold(product):
                     res = fetch_proxies_three(product['urls'])
 
         ItemSoup = BeautifulSoup(res.content, 'html.parser')
-        countSold = ItemSoup.find('span', {'class': 'ui-pdp-subtitle'}).text
-        product['sold'] = countSold[10:]
+        try:
+            countSold = ItemSoup.find('span', {'class': 'ui-pdp-subtitle'}).text
+            product['sold'] = countSold[10:]
+        except:
+            pass
         
-        descriptionContent = ItemSoup.find('p', {'class': 'ui-pdp-description__content'})
-        description = descriptionContent.get_text()
+        try:
+            descriptionContent = ItemSoup.find('p', {'class': 'ui-pdp-description__content'})
+            description = descriptionContent.get_text()
 
-        if len(description) >= 100:
-            product['description'] = description[:99]
-        else:
-            product['description'] = description
-
-        imagesContent = ItemSoup.find_all('div', {'class': 'ui-pdp-thumbnail__picture'})
+            if len(description) >= 100:
+                product['description'] = description[:99]
+            else:
+                product['description'] = description
+        except:
+            pass
         
-        for item in imagesContent:
-            images = item.find('img', {'class': 'ui-pdp-image'})
-            for num in images['alt']:
-                first = images['data-src']
-                if num == '1':
-                    product['first_image'] = first
-                if num == '2':
-                    product['second_image'] = first
+        try:
+            imagesContent = ItemSoup.find_all('div', {'class': 'ui-pdp-thumbnail__picture'})
             
+            for item in imagesContent:
+                images = item.find('img', {'class': 'ui-pdp-image'})
+                desc = ''
+                for num in images['alt']:
+                    images = item.find('img', {'class': 'ui-pdp-image'})
+                    desc += num
 
-
+                    first = images['data-src']
+                    if desc == 'Imagen 1':
+                        pass
+                    if desc == 'Imagen 2':
+                        product['second_image'] = first
+                    if desc == 'Imagen 3':
+                        product['third_image'] = first
+        except:
+            pass
+                
     except Exception as e:
         pass
 
@@ -325,14 +338,13 @@ def main():
         
         for i in range(0, time_queries):
             with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
-                    executor.map(get_sold, products_data[0:4999])
+                    executor.map(get_info, products_data[0:4999])
         
         frame = pd.DataFrame(products_data)
         frame.to_excel(f'{name_seler}.xlsx', index=False)
 
     except Exception as E:
         print(E)
-
 
     x = datetime.datetime.now()
     print(x)
