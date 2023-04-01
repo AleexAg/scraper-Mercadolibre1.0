@@ -264,8 +264,10 @@ def get_info(product):
                 res = fetch_proxies_two(product['urls'])
                 if not res:
                     res = fetch_proxies_three(product['urls'])
-
-        ItemSoup = BeautifulSoup(res.content, 'html.parser')
+        
+        if res != None:
+            ItemSoup = BeautifulSoup(res.content, 'html.parser')
+            ItemSoup2 = BeautifulSoup(res.text, 'html.parser')
         try:
             countSold = ItemSoup.find('span', {'class': 'ui-pdp-subtitle'}).text
             product['sold'] = countSold[10:]
@@ -273,16 +275,14 @@ def get_info(product):
             pass
         
         try:
-            descriptionContent = ItemSoup.find_all('div', {'class': 'ui-pdp-container__row--description'})
-            try:
-                for desc in descriptionContent:
-                    descriptions = desc.find('p', {'class': 'ui-pdp-description__content'}).text
-                    product['description'] = descriptions
+            itemsInfo = ItemSoup2.findAll('div', {'class': 'ui-pdp-description'})
+            for ele in itemsInfo:
+                description = ele.find('p').text
 
-            except Exception as er:
-                print(er)
-        except Exception as e:
-            print(e)
+                product['description'] = description
+
+        except Exception as descError2:
+            print('error to get description', descError2)
         
         try:
             imagesContent = ItemSoup.find_all('div', {'class': 'ui-pdp-thumbnail__picture'})
@@ -313,7 +313,7 @@ def main():
     print(y)
     print("Start scraping... please wait...")
     try:
-        response = fetch_proxies('https://listado.mercadolibre.com.co/_CustId_'+custId)
+        response = fetch_proxies_one('https://listado.mercadolibre.com.co/_CustId_'+custId)
 
         soup = BeautifulSoup(response.content, 'html.parser')
         name_seler = soup.find('h1', {'class': 'ui-search-breadcrumb__title'}).text[17::].replace(' ', '+')
