@@ -7,7 +7,7 @@ import datetime
 
 NUM_THREADS = 10
 
-custId = '176165485'
+custId = '89193573'
 CategoriesWithSub = []
 CategoriesWithOutSub = []
 products_data = []
@@ -273,15 +273,16 @@ def get_info(product):
             pass
         
         try:
-            descriptionContent = ItemSoup.find('p', {'class': 'ui-pdp-description__content'})
-            description = descriptionContent.get_text()
+            descriptionContent = ItemSoup.find_all('div', {'class': 'ui-pdp-container__row--description'})
+            try:
+                for desc in descriptionContent:
+                    descriptions = desc.find('p', {'class': 'ui-pdp-description__content'}).text
+                    product['description'] = descriptions
 
-            if len(description) >= 100:
-                product['description'] = description[:99]
-            else:
-                product['description'] = description
-        except:
-            pass
+            except Exception as er:
+                print(er)
+        except Exception as e:
+            print(e)
         
         try:
             imagesContent = ItemSoup.find_all('div', {'class': 'ui-pdp-thumbnail__picture'})
