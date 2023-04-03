@@ -7,7 +7,7 @@ import datetime
 
 # Main variables
 NUM_THREADS = 10
-custId = '1238035955'   # CHANGE THIS
+custId = '191222360'   # CHANGE THIS
 CategoriesWithSub = []
 CategoriesWithOutSub = []
 products_data = []
@@ -440,7 +440,6 @@ def main():
 
         # ADD TO EXCEL AND CSV
         frame = pd.DataFrame(products_data)
-        frame.to_csv(f'{name_seler}.csv', index=False)
         frame.to_excel(f'{name_seler}.xlsx', index=False)
 
     except Exception as E:
@@ -449,6 +448,6 @@ def main():
     # Print end time
     x = datetime.datetime.now()
     print(x)
-    
+
 if __name__ == '__main__':
     main()
