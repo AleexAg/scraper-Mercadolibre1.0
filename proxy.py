@@ -20,6 +20,15 @@ proxies_three = {
     'https': '34.125.236.127:80',
 }
 
+def fetch(url:str):
+    try:
+        response = requests.get(url)
+        #print("Fetch.. fetch_proxies", url)
+        return response
+    except Exception as error:
+        print("Error fetch", error)
+
+
 def fetch_proxies(url:str):
     try:
         response = requests.get(url, proxies=proxies)
@@ -34,7 +43,8 @@ def fetch_proxies_one(url:str):
         #print("Fetch.. fetch_proxies_one", url)
         return response
     except Exception as error:
-        print("Error fetch", error)
+        pass
+        #print("Error fetch", error)
 
 def fetch_proxies_two(url:str):
     try:
@@ -42,7 +52,8 @@ def fetch_proxies_two(url:str):
         #print("Fetch.. fetch_proxies_two", url)
         return response
     except Exception as error:
-        print("Error fetch", error)
+        pass
+        #print("Error fetch", error)
 
 def fetch_proxies_three(url:str):
     try:
@@ -51,4 +62,5 @@ def fetch_proxies_three(url:str):
         return response
     
     except Exception as error:
-        print("Error fetch", error)
+        pass
+        #print("Error fetch", error)

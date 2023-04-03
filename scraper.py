@@ -1,92 +1,127 @@
-from proxy import fetch_proxies, fetch_proxies_one, fetch_proxies_two, fetch_proxies_three
+from proxy import fetch, fetch_proxies, fetch_proxies_one, fetch_proxies_two, fetch_proxies_three
 from bs4 import BeautifulSoup
 import requests
 import concurrent.futures
 import pandas as pd
 import datetime
 
+# Main variables
 NUM_THREADS = 10
-
-custId = '89193573'
+custId = '1238035955'   # CHANGE THIS
 CategoriesWithSub = []
 CategoriesWithOutSub = []
 products_data = []
 
 
+# Get the categories of publications
 def getMoreCategory(link):
     try:
-        responseCategory = fetch_proxies(link)
-        if not responseCategory:
-            responseCategory = fetch_proxies_one(link)
+        # Conexion to get content
+        responseCategory = None
+        while responseCategory == None:
+            responseCategory = fetch(link)
             if not responseCategory:
-                responseCategory = fetch_proxies_two(link)
+                responseCategory = fetch_proxies(link)
                 if not responseCategory:
-                    responseCategory = fetch_proxies_three(link)
+                    responseCategory = fetch_proxies_one(link)
+                    if not responseCategory:
+                        responseCategory = fetch_proxies_two(link)
+                        if not responseCategory:
+                            responseCategory = fetch_proxies_three(link)
 
+        # Requests basic config
         CategorySoup = BeautifulSoup(responseCategory.content, 'html.parser')
         CategoriesWithSub.remove(link)
+
+        # Get info
         getLinkByCategory(CategorySoup)
     except:
         print("No more subcategories")
 
+
+# Get information on the quantity of sales
 def getTotalSold(name):
     try:
-        response = fetch_proxies(f'https://www.mercadolibre.com.co/perfil/{name}')
-        if not response:
-            response = fetch_proxies_one(f'https://www.mercadolibre.com.co/perfil/{name}')
+        # Connection to get information from the seller
+        response = None
+        while response == None:
+            response = fetch(f'https://www.mercadolibre.com.co/perfil/{name}')
             if not response:
-                response = fetch_proxies_two(f'https://www.mercadolibre.com.co/perfil/{name}')
+                response = fetch_proxies(f'https://www.mercadolibre.com.co/perfil/{name}')
                 if not response:
-                    response = fetch_proxies_three(f'https://www.mercadolibre.com.co/perfil/{name}')
+                    response = fetch_proxies_one(f'https://www.mercadolibre.com.co/perfil/{name}')
+                    if not response:
+                        response = fetch_proxies_two(f'https://www.mercadolibre.com.co/perfil/{name}')
+                        if not response:
+                            response = fetch_proxies_three(f'https://www.mercadolibre.com.co/perfil/{name}')
+
         
+        # Requests basic config
         SellerProfilesoup = BeautifulSoup(response.content, 'html.parser')
         infoSeller = SellerProfilesoup.find('p', {'class': 'seller-info__subtitle-sales'}).text
+
+        # Add to info
         products_data.append({'seller_info':infoSeller})
 
     except:
         print("Error on looking info")
 
+# Get link of product by category
 def getLinkByCategory(pageSoup:BeautifulSoup):
 
-    titleCategory = pageSoup.find('div', {'class': 'ui-search-filter-dt-title shops-custom-primary-font'})
+    # BeautifulSoup configuration
+    titleCategory = pageSoup.find('div', {'class': 'ui-search-filter-dt-title'})
+    
     title = titleCategory.get_text()
     if title == 'Categorías':
 
+        # Get categories
         listCategories = titleCategory.find_previous('div', {'class': 'ui-search-filter-dl shops__filter-items'})
         categories = listCategories.find_all('li', {'class': 'ui-search-filter-container shops__container-lists'})
         
         if (len(categories) > 9):
             linkMoreCategories = listCategories.find('a', {'class': 'ui-search-modal__link ui-search-modal--default ui-search-link'})['href']  
             try:
-                res = fetch_proxies(linkMoreCategories)
-                if res == None:
-                    res = fetch_proxies_one(linkMoreCategories)
+                # Conexion to link
+                res = None
+                while res == None:
+                    res = fetch(linkMoreCategories)
                     if res == None:
-                        res = fetch_proxies_two(linkMoreCategories)
+                        res = fetch_proxies(linkMoreCategories)
                         if res == None:
-                            res = fetch_proxies_three(linkMoreCategories)
+                            res = fetch_proxies_one(linkMoreCategories)
+                            if res == None:
+                                res = fetch_proxies_two(linkMoreCategories)
+                                if res == None:
+                                    res = fetch_proxies_three(linkMoreCategories)
             except:
                 print('Error to get Link categories')
 
+            # BeautifulSoup Config
             CategoryPage = BeautifulSoup(res.content, 'html.parser')
             linkCategories = CategoryPage.find('div', {'class': 'ui-search-search-modal-grid-columns'})
             links = linkCategories.find_all('a', {'class': 'ui-search-search-modal-filter ui-search-link'})
 
             for linkCategory in links:
                 try:
-
-                    res = fetch_proxies(linkCategory.get('href'))
-                    if not res:
-                        res = fetch_proxies_one(linkCategory.get('href'))
-                        if not res:
-                            res = fetch_proxies_two(linkCategory.get('href'))
+                    # Conexion to link
+                    res = None
+                    while res == None:
+                        res = fetch(linkCategory.get('href'))
+                        if res == None:
+                            res = fetch_proxies(linkCategory.get('href'))
                             if not res:
-                                res = fetch_proxies_three(linkCategory.get('href'))
+                                res = fetch_proxies_one(linkCategory.get('href'))
+                                if not res:
+                                    res = fetch_proxies_two(linkCategory.get('href'))
+                                    if not res:
+                                        res = fetch_proxies_three(linkCategory.get('href'))
 
-
+                    # BeautifulSoup config
                     page = BeautifulSoup(res.content, 'html.parser')
                     itemsResult = int(page.find('span',{'class':'ui-search-search-result__quantity-results shops-custom-secondary-font'}).text.replace(' resultados', '').replace('.', ''))
                     
+                    # Add to CategoriesWithSub or CategoriesWithOutSub
                     if itemsResult > 2000:
                         CategoriesWithSub.append(linkCategories.get('href'))
                     else:
@@ -98,16 +133,24 @@ def getLinkByCategory(pageSoup:BeautifulSoup):
             for category in categories:
                 linkCategory = category.find('a', {'class': 'ui-search-link'})['href']
                 try:
-                    res = fetch_proxies(linkCategory)
-                    if not res:
-                        res = fetch_proxies_one(linkCategory)
+                    res = None
+                    while res == None:
+                        res = fetch(linkCategory)
                         if not res:
-                            res = fetch_proxies_two(linkCategory)
+                            res = fetch_proxies(linkCategory)
                             if not res:
-                                res = fetch_proxies_three(linkCategory)
+                                res = fetch_proxies_one(linkCategory)
+                                if not res:
+                                    res = fetch_proxies_two(linkCategory)
+                                    if not res:
+                                        res = fetch_proxies_three(linkCategory)
 
+                    # BeautifulSoup Config
                     page = BeautifulSoup(res.content, 'html.parser')
+
+                    # Get quantity items
                     itemsResult = int(page.find('span',{'class':'ui-search-search-result__quantity-results shops-custom-secondary-font'}).text.replace(' resultados', '').replace('.', ''))
+                    
                     if itemsResult > 2000:
                         CategoriesWithSub.append(linkCategory)
                     else:
@@ -122,14 +165,20 @@ def getLinkByCategory(pageSoup:BeautifulSoup):
         for category in categoriesByPrice:
             listPrice = category.find('a', {'class': 'ui-search-link'})['href']
             try:
-                res = fetch_proxies(listPrice)
-                if not res:
-                    res = fetch_proxies_one(listPrice)
+                # Conexion to listPrice
+                res = None
+                while res == None:
+                    res = fetch(listPrice)
                     if not res:
-                        res = fetch_proxies_two(listPrice)
+                        res = fetch_proxies(listPrice)
                         if not res:
-                            res = fetch_proxies_three(listPrice)
+                            res = fetch_proxies_one(listPrice)
+                            if not res:
+                                res = fetch_proxies_two(listPrice)
+                                if not res:
+                                    res = fetch_proxies_three(listPrice)
                             
+                # BeautifulSoup config            
                 page = BeautifulSoup(res.content, 'html.parser')
                 itemsResult = int(page.find('span',{'class':'ui-search-search-result__quantity-results shops-custom-secondary-font'}).text.replace(' resultados', '').replace('.', ''))
 
@@ -139,10 +188,13 @@ def getLinkByCategory(pageSoup:BeautifulSoup):
                     CategoriesWithOutSub.append(listPrice)
             except:
                 print("Error to search link category")
+
     if len(CategoriesWithSub) > 0:
         with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
             executor.map(getMoreCategory, CategoriesWithSub)
 
+
+# GET PRODUCT ID
 def get_id(url:str) -> str:
 
     url_list = url.split('/')
@@ -158,6 +210,9 @@ def get_id(url:str) -> str:
         product_id = product_id[0]
     return product_id
 
+
+
+# GET INFORMATION
 def getInformationOlList(soup: BeautifulSoup):
     try:
         section = soup.find('section', {'class': 'ui-search-results ui-search-results--without-disclaimer shops__search-results'})
@@ -165,6 +220,7 @@ def getInformationOlList(soup: BeautifulSoup):
 
         for item in rawItemList:
             try:
+                # ADD INFO TO ARRAY
                 with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
                     executor.submit(
                         products_data.append({
@@ -176,17 +232,20 @@ def getInformationOlList(soup: BeautifulSoup):
                             })
                         )
             except Exception as r:
-                print(r)
+                pass
 
     except Exception as e:
         print("Error get element Ol", e)
 
+# Get information
 def getInformation(soup: BeautifulSoup) -> None:
     try:
+        # Get all items
         rawItemList = soup.find_all('li', {'class': 'ui-search-layout__item'})
 
         for item in rawItemList:
             try:
+                # Add items to array
                 with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
                     executor.submit(
                         products_data.append({
@@ -199,8 +258,9 @@ def getInformation(soup: BeautifulSoup) -> None:
                         )
                 
             except Exception as r:
-                print(r)
+                pass
     except:
+        # Get items by list
         getInformationOlList(soup)
         print("Error to get information")
 
@@ -213,35 +273,52 @@ def pagination(nextPage, isNextPage, isFirstPage, soup):
 
     if nextPage and isNextPage == 'Siguiente':
         try:
-            responseNextPage = fetch_proxies(nextPage)
-            if not responseNextPage:
-                responseNextPage = fetch_proxies_one(nextPage)
+            # Conexion with next page
+            responseNextPage = None
+            while responseNextPage == None:
+                responseNextPage = fetch(nextPage)
                 if not responseNextPage:
-                    responseNextPage = fetch_proxies_two(nextPage)
+                    responseNextPage = fetch_proxies(nextPage)
                     if not responseNextPage:
-                        responseNextPage = fetch_proxies_three(nextPage)
+                        responseNextPage = fetch_proxies_one(nextPage)
+                        if not responseNextPage:
+                            responseNextPage = fetch_proxies_two(nextPage)
+                            if not responseNextPage:
+                                responseNextPage = fetch_proxies_three(nextPage)
 
+            # BeautifulSoup Config
             soupNextPage = BeautifulSoup(responseNextPage.content, 'html.parser')
-            getInformation(soupNextPage)
 
+            getInformation(soupNextPage)
+            
+            # Get links
             nextPageResult = soupNextPage.find('a', {'class': 'andes-pagination__link', 'title': 'Siguiente'})['href']
             isNextPageResult = soupNextPage.find('a', {'class': 'andes-pagination__link', 'title': 'Siguiente'})['title']
+            
             if nextPageResult and isNextPageResult:
                 pagination(nextPageResult, isNextPageResult, '0', soupNextPage)
+
         except:
             print("end code")
 
 def searchItems(link):
     try:
-        responseCategory = fetch_proxies(link)
-        if not responseCategory:
-            responseCategory = fetch_proxies_one(link)
+        # Conexion to search items
+        responseCategory = None
+        while responseCategory == None:
+            responseCategory = fetch(link)
             if not responseCategory:
-                responseCategory = fetch_proxies_two(link)
+                responseCategory = fetch_proxies(link)
                 if not responseCategory:
-                    responseCategory = fetch_proxies_three(link)
+                    responseCategory = fetch_proxies_one(link)
+                    if not responseCategory:
+                        responseCategory = fetch_proxies_two(link)
+                        if not responseCategory:
+                            responseCategory = fetch_proxies_three(link)
 
+        # BeautifulSoup config
         CategorySoup = BeautifulSoup(responseCategory.content, 'html.parser')
+
         try:
             nextPage = CategorySoup.find('a', {'class': 'andes-pagination__link'})['href']
             isNextPage = CategorySoup.find('a', {'class': 'andes-pagination__link'})['title']
@@ -255,36 +332,48 @@ def searchItems(link):
     except:
         print("Error to get items")
 
+
+# Get information with products
 def get_info(product):
     try:
-        res = fetch_proxies(product['urls'])
-        if not res:
-            res = fetch_proxies_one(product['urls'])
+        # Conexion product
+        res = None
+        while res == None:
+            res = fetch(product['urls'])
             if not res:
-                res = fetch_proxies_two(product['urls'])
+                res = fetch_proxies(product['urls'])
                 if not res:
-                    res = fetch_proxies_three(product['urls'])
-        
-        if res != None:
-            ItemSoup = BeautifulSoup(res.content, 'html.parser')
-            ItemSoup2 = BeautifulSoup(res.text, 'html.parser')
+                    res = fetch_proxies_one(product['urls'])
+                    if not res:
+                        res = fetch_proxies_two(product['urls'])
+                        if not res:
+                            res = fetch_proxies_three(product['urls'])
+
+        # Config
+        ItemSoup = BeautifulSoup(res.content, 'html.parser')
+        ItemSoup2 = BeautifulSoup(res.text, 'html.parser')
+
         try:
+            # Sold items
             countSold = ItemSoup.find('span', {'class': 'ui-pdp-subtitle'}).text
             product['sold'] = countSold[10:]
         except:
             pass
         
         try:
-            itemsInfo = ItemSoup2.findAll('div', {'class': 'ui-pdp-description'})
+            # Get description
+            itemsInfo = ItemSoup2.findAll('div', {'class': 'ui-pdp-container__row--description'})
             for ele in itemsInfo:
-                description = ele.find('p').text
+                description = ele.find('p')
+                dedsc = description.get_text()
 
-                product['description'] = description
+                product['description'] = dedsc
 
         except Exception as descError2:
-            print('error to get description', descError2)
+            pass
         
         try:
+            # Get second and third images
             imagesContent = ItemSoup.find_all('div', {'class': 'ui-pdp-thumbnail__picture'})
             
             for item in imagesContent:
@@ -309,13 +398,19 @@ def get_info(product):
 
 
 def main():
+    # Start time
     y = datetime.datetime.now()
     print(y)
+
     print("Start scraping... please wait...")
     try:
-        response = fetch_proxies_one('https://listado.mercadolibre.com.co/_CustId_'+custId)
+        # First conexion ONLY listado.mercadolibre.com.co
+        response = fetch_proxies('https://listado.mercadolibre.com.co/_CustId_'+custId+'_PrCategId_AD')
 
+        # BeautifulSoup Config
         soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Get seler name
         name_seler = soup.find('h1', {'class': 'ui-search-breadcrumb__title'}).text[17::].replace(' ', '+')
 
         getLinkByCategory(soup)
@@ -325,6 +420,7 @@ def main():
                 executor.map(searchItems, CategoriesWithOutSub)
         products_data.sort(reverse=True, key=lambda x:(len(x), repr(x)))
         
+        # Delete duplicate products
         for i in range(0, len(products_data)):
             try:
                 if products_data[i+1]['id_product'] == products_data[i]['id_product']:
@@ -341,13 +437,18 @@ def main():
             with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
                     executor.map(get_info, products_data[0:4999])
         
+
+        # ADD TO EXCEL AND CSV
         frame = pd.DataFrame(products_data)
+        frame.to_csv(f'{name_seler}.csv', index=False)
         frame.to_excel(f'{name_seler}.xlsx', index=False)
 
     except Exception as E:
         print(E)
 
+    # Print end time
     x = datetime.datetime.now()
     print(x)
+    
 if __name__ == '__main__':
     main()
