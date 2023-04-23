@@ -1,23 +1,23 @@
 import requests
 
 proxies = {
-    'http': '104.154.168.184:80',
-    'https': '104.154.168.184:80',
+    'http': 'x.x.x.x:80',
+    'https': 'x.x.x.x:80',
 }
 
 proxies_one = {
-    'http': '34.139.225.109:80',
-    'https': '34.139.225.109:80',
+    'http': 'x.x.x.x:80',
+    'https': 'x.x.x.x:80',
 }
 
 proxies_two = {
-    'http': '34.86.0.141:80',
-    'https': '34.86.0.141:80',
+    'http': 'x.x.x.x:80',
+    'https': 'x.x.x.x:80',
 }
 
 proxies_three = {
-    'http': '34.125.236.127:80',
-    'https': '34.125.236.127:80',
+    'http': 'x.x.x.x:80',
+    'https': 'x.x.x.x:80',
 }
 
 def fetch(url:str):
