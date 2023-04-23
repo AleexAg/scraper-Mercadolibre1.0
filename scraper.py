@@ -6,8 +6,8 @@ import pandas as pd
 import datetime
 
 # Main variables
-NUM_THREADS = 10
-custId = '191222360'   # CHANGE THIS
+NUM_THREADS = 10  #change
+custId = ''   # CHANGE THIS
 CategoriesWithSub = []
 CategoriesWithOutSub = []
 products_data = []
